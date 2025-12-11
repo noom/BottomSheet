@@ -3,11 +3,11 @@
     "pins": [
       {
         "package": "UIKitPresentationModifier",
-        "repositoryURL": "https://github.com/mtzaquia/UIKitPresentationModifier.git",
+        "repositoryURL": "https://github.com/noom/UIKitPresentationModifier",
         "state": {
           "branch": null,
-          "revision": "8aa474fe01e2ff9c716f272e395c36fa2af23683",
-          "version": "1.0.0"
+          "revision": "b450ac9c23603a2984d9a3a397d0c4ac2552ee1e",
+          "version": "1.0.1"
         }
       }
     ]
