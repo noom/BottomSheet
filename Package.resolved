@@ -5,9 +5,9 @@
         "package": "UIKitPresentationModifier",
         "repositoryURL": "https://github.com/noom/UIKitPresentationModifier",
         "state": {
-          "branch": null,
-          "revision": "b450ac9c23603a2984d9a3a397d0c4ac2552ee1e",
-          "version": "1.0.1"
+          "branch": "rep/add-ignored-vc",
+          "revision": "9e45f04641075d2df334697039cc52c94ecc3742",
+          "version": null
         }
       }
     ]
