@@ -245,7 +245,7 @@ extension BottomSheetPresentationController: UIGestureRecognizerDelegate {
         guard gestureRecognizer === dismissDragGestureRecognizer,
               let scrollView = otherGestureRecognizer.view as? UIScrollView,
               otherGestureRecognizer === scrollView.panGestureRecognizer,
-              let presentedView = presentedView else {
+              let presentedView else {
             return false
         }
 
@@ -253,7 +253,7 @@ extension BottomSheetPresentationController: UIGestureRecognizerDelegate {
     }
 
     private func verticallyScrollableScrollView(at gestureRecognizer: UIGestureRecognizer) -> UIScrollView? {
-        guard let presentedView = presentedView else { return nil }
+        guard let presentedView else { return nil }
 
         let location = gestureRecognizer.location(in: presentedView)
         var view = presentedView.hitTest(location, with: nil)
