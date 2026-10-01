@@ -47,6 +47,14 @@ final class BottomSheetPresentationController: UIPresentationController {
 
     private let maximumHeightRatio: CGFloat = 0.8
 
+    /// The maximum width of the sheet. When the container is wider, the sheet is centered horizontally.
+    /// `nil` makes the sheet span the full width of the container.
+    public var maximumWidth: CGFloat? {
+        didSet {
+            containerView?.setNeedsLayout()
+        }
+    }
+
     public var cornerRadius: CGFloat = 25 {
         didSet {
             presentedView?.layer.cornerRadius = cornerRadius
@@ -107,6 +115,7 @@ final class BottomSheetPresentationController: UIPresentationController {
 
         dismissTapGestureRecognizer.addTarget(self, action: #selector(handleOverlayTap))
         dismissDragGestureRecognizer.addTarget(self, action: #selector(handlePan))
+        dismissDragGestureRecognizer.delegate = self
 
         (cornerRadius = cornerRadius)
         (prefersGrabberVisible = prefersGrabberVisible)
@@ -186,8 +195,10 @@ final class BottomSheetPresentationController: UIPresentationController {
             return .zero
         }
         
+        let width = min(containerView.bounds.width, maximumWidth ?? .greatestFiniteMagnitude)
+
         let targetSize = CGSize(
-            width: containerView.frame.width,
+            width: width,
             height: containerView.frame.height
         )
 
@@ -196,9 +207,9 @@ final class BottomSheetPresentationController: UIPresentationController {
         let height = min(sizeThatFits.height, containerView.frame.height * maximumHeightRatio)
 
         return CGRect(
-            x: 0,
+            x: (containerView.bounds.width - width) / 2,
             y: containerView.bounds.height - height,
-            width: containerView.bounds.width,
+            width: width,
             height: height
         )
     }
@@ -206,5 +217,62 @@ final class BottomSheetPresentationController: UIPresentationController {
     private func setDecorations(hidden: Bool) {
         dimmingView.alpha = hidden ? 0 : 1
         grabberView.alpha = hidden || !prefersGrabberVisible ? 0 : 1
+    }
+}
+
+// MARK: - Scroll hand-off
+
+extension BottomSheetPresentationController: UIGestureRecognizerDelegate {
+    /// Inside vertically scrollable content, the drag only starts dismissing when it moves down while the
+    /// content is scrolled to the top. Every other drag is left to the scroll view.
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard gestureRecognizer === dismissDragGestureRecognizer,
+              let scrollView = verticallyScrollableScrollView(at: gestureRecognizer) else {
+            return true
+        }
+
+        let velocity = dismissDragGestureRecognizer.velocity(in: containerView)
+        let isDraggingDown = velocity.y > 0 && velocity.y > abs(velocity.x)
+        return isDraggingDown && scrollView.isScrolledToTop
+    }
+
+    /// Scroll views inside the sheet wait for the dismiss drag to fail, so that a drag that starts
+    /// dismissing does not also scroll the content.
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        guard gestureRecognizer === dismissDragGestureRecognizer,
+              let scrollView = otherGestureRecognizer.view as? UIScrollView,
+              otherGestureRecognizer === scrollView.panGestureRecognizer,
+              let presentedView else {
+            return false
+        }
+
+        return scrollView.isDescendant(of: presentedView) && scrollView.canScrollVertically
+    }
+
+    private func verticallyScrollableScrollView(at gestureRecognizer: UIGestureRecognizer) -> UIScrollView? {
+        guard let presentedView else { return nil }
+
+        let location = gestureRecognizer.location(in: presentedView)
+        var view = presentedView.hitTest(location, with: nil)
+        while let current = view, current !== presentedView {
+            if let scrollView = current as? UIScrollView, scrollView.canScrollVertically {
+                return scrollView
+            }
+            view = current.superview
+        }
+        return nil
+    }
+}
+
+private extension UIScrollView {
+    var canScrollVertically: Bool {
+        isScrollEnabled && contentSize.height + adjustedContentInset.top + adjustedContentInset.bottom > bounds.height
+    }
+
+    var isScrolledToTop: Bool {
+        contentOffset.y <= -adjustedContentInset.top
     }
 }
